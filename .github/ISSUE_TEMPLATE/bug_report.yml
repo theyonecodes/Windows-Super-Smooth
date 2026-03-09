@@ -1,0 +1,46 @@
+name: "🐞 Bug Report"
+description: "Report a technical issue or system instability."
+labels: ["bug", "investigation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thank you for reporting!
+        As this is a high-precision kernel optimizer, we need specific technical data to diagnose your issue.
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: "Describe the issue"
+      description: "What exactly happened? (e.g., system stutter, application crash, etc.)"
+      placeholder: "I ran the setup script and noticed..."
+    validations:
+      required: true
+  - type: dropdown
+    id: windows-version
+    attributes:
+      label: "Windows Version"
+      options:
+        - "Windows 11"
+        - "Windows 10"
+        - "Windows Server"
+    validations:
+      required: true
+  - type: textarea
+    id: hardware-specs
+    attributes:
+      label: "Hardware Specs"
+      description: "Please provide your CPU, RAM (e.g., 16GB), and Disk type (NVMe/SATA SSD)."
+      placeholder: "Intel i7-12700K, 32GB RAM, Samsung 980 Pro NVMe"
+    validations:
+      required: true
+  - type: checkboxes
+    id: steps-taken
+    attributes:
+      label: "Steps Taken"
+      options:
+        - label: "I ran the setup script as Administrator."
+          required: true
+        - label: "I restarted my computer after running the setup."
+          required: true
+        - label: "I have a System Restore point created."
+          required: true
