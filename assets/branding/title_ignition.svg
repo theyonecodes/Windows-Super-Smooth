@@ -1,0 +1,23 @@
+<svg width="800" height="60" viewBox="0 0 800 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="stripe_grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.05" />
+      <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.05" />
+    </linearGradient>
+    <filter id="text_glow">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <style>
+      .title-text { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 2px; }
+    </style>
+  </defs>
+  <rect width="800" height="60" rx="10" fill="#0F172A"/>
+  <rect width="800" height="60" rx="10" fill="url(#stripe_grad)" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.3"/>
+  <rect width="100" height="60" fill="white" opacity="0.05">
+    <animateTransform attributeName="transform" type="translate" from="-100 0" to="800 0" dur="3s" repeatCount="indefinite" />
+  </rect>
+  <text x="50%" y="35" dominant-baseline="middle" text-anchor="middle" fill="#38BDF8" font-size="24" font-weight="800" class="title-text" filter="url(#text_glow)">IGNITION CHECKLIST</text>
+  <rect y="58" width="800" height="2" fill="#38BDF8" opacity="0.5"/>
+</svg>

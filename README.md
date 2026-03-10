@@ -1,7 +1,7 @@
 <div align="center">
 
-<!-- 2026 ENGINE HERO: 3D ANAMORPHIC OVERHAUL -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0F172A,70:38BDF8,100:0F172A&height=250&section=header&text=Windows%20Super%20Smooth&fontSize=70&animation=fadeIn&fontAlignY=35&stroke=000000&strokeWidth=1" width="100%" />
+<!-- 2026 BULLETPROOF HERO: CUSTOM SVG -->
+<img src="assets/branding/hero.svg" width="100%" />
 
 <br>
 
@@ -29,8 +29,8 @@
 
 <br>
 
-<!-- THE LEGAL BARRIER: NEON WARNING -->
-<img src="https://capsule-render.vercel.app/api?type=soft&color=FF0000&height=60&section=header&text=🛑%20PROTOCOL%20ADVISORY&fontSize=30&fontAlignY=50&fontColor=FFFFFF" />
+<!-- PROTOCOL ADVISORY: HIGH CONTRAST -->
+<img src="https://capsule-render.vercel.app/api?type=soft&color=FF0000&height=60&section=header&text=🛑%20PROTOCOL%20ADVISORY&fontSize=30&fontAlignY=50&fontColor=FFFFFF" width="100%" />
 
 <div align="left">
   <div style="background: rgba(255,0,0,0.05); border: 1px solid #FF0000; padding: 20px; border-radius: 10px;">
@@ -42,8 +42,8 @@
 
 <br>
 
-<!-- WHAT'S IN THE BOX: 3D DEPTH GRID -->
-<img src="https://capsule-render.vercel.app/api?type=soft&color=38BDF8&height=60&section=header&text=🏎️%20THE%20OPTIMIZATION%20MANIFESTO&fontSize=30&fontAlignY=50&fontColor=000000" />
+<!-- OPTIMIZATION STRIPE: CUSTOM GLASS SVG -->
+<img src="assets/branding/title_manifesto.svg" width="100%" />
 
 <table border="0" cellpadding="10" cellspacing="0" width="100%">
   <tr>
@@ -80,8 +80,8 @@
 
 <br>
 
-<!-- 3D STEP-BY-STEP COMMANDS -->
-<img src="https://capsule-render.vercel.app/api?type=soft&color=38BDF8&height=60&section=header&text=🛠️%20IGNITION%20CHECKLIST&fontSize=30&fontAlignY=50&fontColor=000000" />
+<!-- IGNITION STRIPE: CUSTOM GLASS SVG -->
+<img src="assets/branding/title_ignition.svg" width="100%" />
 
 <div align="left">
   <div style="border: 2px dashed #38BDF8; padding: 25px; border-radius: 20px; background: rgba(56,189,248,0.02);">
