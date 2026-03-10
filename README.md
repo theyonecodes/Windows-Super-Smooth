@@ -48,7 +48,7 @@
 <table border="0" cellpadding="5" cellspacing="0" width="100%">
   <tr>
     <td colspan="4" align="center">
-      <h3 style="color: #38BDF8; margin-bottom: 5px;">1. The Setup (<code>1_Advanced_OneTime_Setup.bat</code>)</h3>
+      <h3>1. The Setup (<code>1_Advanced_OneTime_Setup.bat</code>)</h3>
       <p style="margin-top: 0; color: #8b949e;"><i>The "DNA Swap." Run this once and watch your OS change its personality.</i></p>
     </td>
   </tr>
@@ -73,7 +73,7 @@
   <tr>
     <td colspan="4" align="center">
       <br><hr style="border-color: #30363d;"><br>
-      <h3 style="color: #38BDF8; margin-bottom: 5px;">2. The Flush (<code>2_Periodic_Flush.bat</code>)</h3>
+      <h3>2. The Flush (<code>2_Periodic_Flush.bat</code>)</h3>
       <p style="margin-top: 0; color: #8b949e;"><i>The "Morning Shower." Run this when things feel a little... "sticky." 🧼</i></p>
     </td>
   </tr>
