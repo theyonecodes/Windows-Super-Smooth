@@ -96,7 +96,7 @@
 <div align="center">
   <img src="https://komarev.com/ghpvc/?username=theyonecodes-wss&style=flat-square&color=38bdf8&label=ACCESS_GRANTED"/>
   <br><br>
-  <b><font color="#38BDF8">Current Status:</font></b> <i>Windows DNA re-programmed. Friction Deleted. Performance Peak.</i> 🚀
+  <b><font color="#38BDF8">Current Status:</font></b> <i>CORE</i> 🚀
 </div>
 
 </div>
