@@ -26,7 +26,7 @@
 <br>
 
 <!-- THE LAWYER IN THE ROOM -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛑%20THE%20LAWYER%20IN%20THE%20ROOM&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛑%20THE%20LAWYER%20IN%20THE%20ROOM&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
 
 <div align="left">
   <table border="0" width="100%">
@@ -43,7 +43,7 @@
 <br>
 
 <!-- WHAT'S IN THE BOX GRID -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🏎️%20WHAT'S%20IN%20THE%20BOX?&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🏎️%20WHAT'S%20IN%20THE%20BOX?&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
 
 <table border="0" cellpadding="5" cellspacing="0" width="100%">
   <tr>
@@ -96,18 +96,18 @@
 <br>
 
 <!-- HOW TO USE -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛠️%20HOW%20TO%20USE%20THIS%20THING&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛠️%20HOW%20TO%20USE%20THIS%20THING&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
 
 <div align="left">
   <table border="0" width="100%">
     <tr>
       <td>
         <ol>
-          <li><b>Grab the goods</b>: Download the ZIP or <code>git clone</code> the repo.</li>
-          <li><b>Open the folder</b>: Put it on your Desktop.</li>
-          <li><b>The Magic Click</b>: <b>Right-click</b> <code>1_Advanced_OneTime_Setup.bat</code> ➔ <b>Run as Administrator</b>.</li>
-          <li><b>Nap time</b>: <b>Restart your computer.</b> The magic happens during the cold boot. 💤</li>
-          <li><b>Stay Fresh</b>: Run the <code>2_Periodic_Flush.bat</code> every Monday morning or whenever your machine feels like it needs a coffee. ☕</li>
+          <li><b><font color="#38BDF8">Grab the goods</font></b>: Download the ZIP or <code>git clone</code> the repo.</li>
+          <li><b><font color="#38BDF8">Open the folder</font></b>: Put it on your Desktop.</li>
+          <li><b><font color="#38BDF8">The Magic Click</font></b>: <b>Right-click</b> <code>1_Advanced_OneTime_Setup.bat</code> ➔ <b>Run as Administrator</b>.</li>
+          <li><b><font color="#38BDF8">Nap time</font></b>: <b>Restart your computer.</b> The magic happens during the cold boot. 💤</li>
+          <li><b><font color="#38BDF8">Stay Fresh</font></b>: Run the <code>2_Periodic_Flush.bat</code> every Monday morning or whenever your machine feels like it needs a coffee. ☕</li>
         </ol>
       </td>
     </tr>
@@ -117,7 +117,7 @@
 <br>
 
 <!-- POLICY -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🔒%20THE%20POLICY&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🔒%20THE%20POLICY&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
 
 <div align="left">
   <table border="0" width="100%">
