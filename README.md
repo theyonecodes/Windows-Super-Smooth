@@ -15,7 +15,7 @@
   <tr>
     <td width="60%" valign="middle">
       <p>Let’s be real: Out-of-the-box Windows feels like it’s trying to run a marathon while carrying a backpack full of bricks. 🎒 Between the background "telemetry" (fancy word for spying), the Xbox services you never use, and the OS constantly second-guessing itself, it’s a wonder we get any coding done at all.</p>
-      <p><b><font color="#38BDF8">Windows Super Smooth</font></b> is the "Axe" to those bricks. We’re not here to just "clean" your registry; we’re here to re-program the Windows DNA so it finally acts like the high-performance engine you paid for. 🏎️</p>
+      <p><b>Windows Super Smooth</b> is the "Axe" to those bricks. We’re not here to just "clean" your registry; we’re here to re-program the Windows DNA so it finally acts like the high-performance engine you paid for. 🏎️</p>
     </td>
     <td width="40%" align="center" valign="middle">
       <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHR6eXlyeXlyeXlyeXlyeXlyeXlyeXlyeXlyeXlyeXlyeXlyJmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKVUn7iM8FMEU24/giphy.gif" width="100%" style="border-radius: 10px;" />
@@ -26,15 +26,15 @@
 <br>
 
 <!-- THE LAWYER IN THE ROOM -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛑%20THE%20LAWYER%20IN%20THE%20ROOM&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛑%20THE%20LAWYER%20IN%20THE%20ROOM&fontSize=30&fontAlignY=50" />
 
 <div align="left">
   <table border="0" width="100%">
     <tr>
       <td>
-        <b><font color="#38BDF8">Don't break your toys. 🧸</font></b><br>
+        <b>Don't break your toys. 🧸</b><br>
         We’re messing with the engine room here (the Kernel). While we’ve tuned this to be as safe as possible, every machine is a snowflake. <b>Use this at your own risk.</b> We aren't responsible if your computer starts flying or forgets how to be a computer. <br><br>
-        <b>Pro Tip:</b> Make a <b><font color="#38BDF8">System Restore Point</font></b> before you hit the "Go" button. Better safe than sorry!
+        <b>Pro Tip:</b> Make a <b>System Restore Point</b> before you hit the "Go" button. Better safe than sorry!
       </td>
     </tr>
   </table>
@@ -43,51 +43,51 @@
 <br>
 
 <!-- WHAT'S IN THE BOX GRID -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🏎️%20WHAT'S%20IN%20THE%20BOX?&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🏎️%20WHAT'S%20IN%20THE%20BOX?&fontSize=30&fontAlignY=50" />
 
 <table border="0" cellpadding="5" cellspacing="0" width="100%">
   <tr>
     <td colspan="4" align="center">
-      <h3><font color="#38BDF8">1. The Setup (<code>1_Advanced_OneTime_Setup.bat</code>)</font></h3>
+      <h3>1. The Setup (<code>1_Advanced_OneTime_Setup.bat</code>)</h3>
       <p style="margin-top: 0; color: #8b949e;"><i>The "DNA Swap." Run this once and watch your OS change its personality.</i></p>
     </td>
   </tr>
   <tr>
     <td width="25%" align="center" valign="top">
-      <b><font color="#38BDF8">🧠 Kernel Pinned to RAM</font></b><br>
+      <b>🧠 Kernel Pinned to RAM</b><br>
       <sub style="color: #8b949e;">We tell Windows to stop moving core drivers to the disk. Everything stays in the fast lane (RAM).</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <b><font color="#38BDF8">⚡ The "Snappy" Scheduler</font></b><br>
+      <b>⚡ The "Snappy" Scheduler</b><br>
       <sub style="color: #8b949e;">We re-tuned the CPU to prioritize your active window. When you click, Windows says "Yes, sir!" immediately.</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <b><font color="#38BDF8">🍳 Bye-Bye Virtualization Lag</font></b><br>
+      <b>🍳 Bye-Bye Virtualization Lag</b><br>
       <sub style="color: #8b949e;">We cut out the VBS/HVCI security tax that’s been eating 10% of your CPU for breakfast.</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <b><font color="#38BDF8">🛣️ Direct Highway for Data</font></b><br>
+      <b>🛣️ Direct Highway for Data</b><br>
       <sub style="color: #8b949e;">We opened up a massive 512MB buffer for your disk. Your <code>npm install</code> and <code>cargo build</code> commands will finally stop choking.</sub>
     </td>
   </tr>
   <tr>
     <td colspan="4" align="center">
       <br><hr style="border-color: #30363d;"><br>
-      <h3><font color="#38BDF8">2. The Flush (<code>2_Periodic_Flush.bat</code>)</font></h3>
+      <h3>2. The Flush (<code>2_Periodic_Flush.bat</code>)</h3>
       <p style="margin-top: 0; color: #8b949e;"><i>The "Morning Shower." Run this when things feel a little... "sticky." 🧼</i></p>
     </td>
   </tr>
   <tr>
     <td width="33%" align="center" valign="top">
-      <b><font color="#38BDF8">🖥️ Shell Refresh</font></b><br>
+      <b>🖥️ Shell Refresh</b><br>
       <sub style="color: #8b949e;">We kick <code>explorer.exe</code> and give it a fresh start. Instantly dumps leaked UI memory.</sub>
     </td>
     <td width="33%" align="center" valign="top">
-      <b><font color="#38BDF8">🔌 DNS Jolt</font></b><br>
+      <b>🔌 DNS Jolt</b><br>
       <sub style="color: #8b949e;">Flushes the network pipes so those "random" connection drops disappear.</sub>
     </td>
     <td width="33%" align="center" valign="top">
-      <b><font color="#38BDF8">🧹 Junk Purge</font></b><br>
+      <b>🧹 Junk Purge</b><br>
       <sub style="color: #8b949e;">Wipes the stale caches that Windows likes to hoard like a pack-rat.</sub>
     </td>
   </tr>
@@ -96,18 +96,18 @@
 <br>
 
 <!-- HOW TO USE -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛠️%20HOW%20TO%20USE%20THIS%20THING&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛠️%20HOW%20TO%20USE%20THIS%20THING&fontSize=30&fontAlignY=50" />
 
 <div align="left">
   <table border="0" width="100%">
     <tr>
       <td>
         <ol>
-          <li><b><font color="#38BDF8">Grab the goods</font></b>: Download the ZIP or <code>git clone</code> the repo.</li>
-          <li><b><font color="#38BDF8">Open the folder</font></b>: Put it on your Desktop.</li>
-          <li><b><font color="#38BDF8">The Magic Click</font></b>: <b>Right-click</b> <code>1_Advanced_OneTime_Setup.bat</code> ➔ <b>Run as Administrator</b>.</li>
-          <li><b><font color="#38BDF8">Nap time</font></b>: <b>Restart your computer.</b> The magic happens during the cold boot. 💤</li>
-          <li><b><font color="#38BDF8">Stay Fresh</font></b>: Run the <code>2_Periodic_Flush.bat</code> every Monday morning or whenever your machine feels like it needs a coffee. ☕</li>
+          <li><b>Grab the goods</b>: Download the ZIP or <code>git clone</code> the repo.</li>
+          <li><b>Open the folder</b>: Put it on your Desktop.</li>
+          <li><b>The Magic Click</b>: <b>Right-click</b> <code>1_Advanced_OneTime_Setup.bat</code> ➔ <b>Run as Administrator</b>.</li>
+          <li><b>Nap time</b>: <b>Restart your computer.</b> The magic happens during the cold boot. 💤</li>
+          <li><b>Stay Fresh</b>: Run the <code>2_Periodic_Flush.bat</code> every Monday morning or whenever your machine feels like it needs a coffee. ☕</li>
         </ol>
       </td>
     </tr>
@@ -117,14 +117,14 @@
 <br>
 
 <!-- POLICY -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🔒%20THE%20POLICY&fontSize=30&fontAlignY=50&fontColor=38BDF8" />
+<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🔒%20THE%20POLICY&fontSize=30&fontAlignY=50" />
 
 <div align="left">
   <table border="0" width="100%">
     <tr>
       <td>
-        <b><font color="#38BDF8">The Secret Sauce:</font></b> Anyone can copy-paste a registry tweak. The real magic here is the <b>Selection</b>. We spent hours researching which knobs to turn so you don't have to.<br><br>
-        <b><font color="#38BDF8">No Strangers in the Kitchen:</font></b> To keep this suite rock-solid and stable, we <b>do not accept code contributions.</b> We want to make sure every line of code is expert-verified. If you find a bug, open an <b>Issue</b> and we’ll jump on it! 🐞
+        <b>The Secret Sauce:</b> Anyone can copy-paste a registry tweak. The real magic here is the <b>Selection</b>. We spent hours researching which knobs to turn so you don't have to.<br><br>
+        <b>No Strangers in the Kitchen:</b> To keep this suite rock-solid and stable, we <b>do not accept code contributions.</b> We want to make sure every line of code is expert-verified. If you find a bug, open an <b>Issue</b> and we’ll jump on it! 🐞
       </td>
     </tr>
   </table>
@@ -134,6 +134,6 @@
 
 <img src="https://komarev.com/ghpvc/?username=theyonecodes-wss&style=flat-square&color=38bdf8&label=ACCESS_GRANTED"/>
 <br>
-<p style="color: #8b949e;"><sub><b>Current Status:</b> <i>Engine Tuned. Friction Deleted. Now go build something cool.</i> 🚀</sub></p>
+<b>Current Status:</b> <i>Engine Tuned. Friction Deleted. Now go build something cool.</i> 🚀
 
 </div>
