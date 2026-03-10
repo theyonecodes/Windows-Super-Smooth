@@ -26,7 +26,7 @@
 <br>
 
 <!-- THE LAWYER IN THE ROOM -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛑%20THE%20LAWYER%20IN%20THE%20ROOM&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=soft&color=38BDF8&height=60&section=header&text=🛑%20THE%20LAWYER%20IN%20THE%20ROOM&fontSize=30&fontAlignY=50&fontColor=000000" />
 
 <div align="left">
   <table border="0" width="100%">
@@ -43,7 +43,7 @@
 <br>
 
 <!-- WHAT'S IN THE BOX GRID -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🏎️%20WHAT'S%20IN%20THE%20BOX?&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=soft&color=38BDF8&height=60&section=header&text=🏎️%20WHAT'S%20IN%20THE%20BOX?&fontSize=30&fontAlignY=50&fontColor=000000" />
 
 <table border="0" cellpadding="5" cellspacing="0" width="100%">
   <tr>
@@ -96,7 +96,7 @@
 <br>
 
 <!-- HOW TO USE -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🛠️%20HOW%20TO%20USE%20THIS%20THING&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=soft&color=38BDF8&height=60&section=header&text=🛠️%20HOW%20TO%20USE%20THIS%20THING&fontSize=30&fontAlignY=50&fontColor=000000" />
 
 <div align="left">
   <table border="0" width="100%">
@@ -117,7 +117,7 @@
 <br>
 
 <!-- POLICY -->
-<img src="https://capsule-render.vercel.app/api?type=transparent&color=38BDF8&height=60&section=header&text=🔒%20THE%20POLICY&fontSize=30&fontAlignY=50" />
+<img src="https://capsule-render.vercel.app/api?type=soft&color=38BDF8&height=60&section=header&text=🔒%20THE%20POLICY&fontSize=30&fontAlignY=50&fontColor=000000" />
 
 <div align="left">
   <table border="0" width="100%">
