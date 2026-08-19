@@ -1,15 +1,36 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-$ErrorActionPreference = 'SilentlyContinue'
 
-# --- SELF ELEVATION ---
+# --- SELF ELEVATION (must be first, before ErrorActionPreference) ---
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    $script = $PSCommandPath
-    if (-not $script) { $script = $MyInvocation.MyCommand.Path }
-    if (-not $script) { $script = $env:TEMP + '\wss.ps1' }
-    Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$script`""
+    $scriptPath = $null
+    if ($PSCommandPath -and (Test-Path $PSCommandPath)) { $scriptPath = $PSCommandPath }
+    elseif ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) { $scriptPath = $MyInvocation.MyCommand.Path }
+    elseif ($PSScriptRoot -and $MyInvocation.MyCommand.Name) {
+        $candidate = Join-Path $PSScriptRoot $MyInvocation.MyCommand.Name
+        if (Test-Path $candidate) { $scriptPath = $candidate }
+    }
+    if (-not $scriptPath) {
+        $found = Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter "WindowsSuperSmooth.ps1" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($found) { $scriptPath = $found.FullName }
+    }
+    if (-not $scriptPath) { $scriptPath = Join-Path $env:USERPROFILE 'Downloads\WindowsSuperSmooth.ps1' }
+    
+    # Copy to temp to avoid path issues
+    $tempCopy = Join-Path $env:TEMP 'wss.ps1'
+    Copy-Item $scriptPath $tempCopy -Force -ErrorAction SilentlyContinue
+    
+    $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$tempCopy`""
+    try {
+        Start-Process powershell.exe -Verb RunAs -ArgumentList $argList -ErrorAction Stop
+    } catch {
+        Write-Host "Failed to elevate: $($_.Exception.Message)" -ForegroundColor Red
+        Start-Sleep -Seconds 5
+    }
     exit
 }
+
+$ErrorActionPreference = 'SilentlyContinue'
 
 # --- LOGGING ---
 $logPath = Join-Path $env:USERPROFILE 'Downloads\systemcare.log'
