@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 <!-- 2026 BULLETPROOF HERO: CUSTOM SVG -->
 <img src="assets/branding/hero.svg" width="100%" />
@@ -17,8 +17,8 @@
   <tr>
     <td width="60%" valign="middle">
       <div style="background: #1e293b; border-left: 5px solid #38BDF8; padding: 25px; border-radius: 12px; box-shadow: 15px 15px 0px rgba(56,189,248,0.1);">
-        <p>Out-of-the-box Windows is trying to run a marathon while carrying a backpack full of bricks. 🎒</p>
-        <p><b><font color="#38BDF8">Windows Super Smooth</font></b> is the surgical tool that removes them. We don't just "clean" things; we re-program the OS DNA so it finally acts like the high-performance engine you paid for. 🏎️</p>
+        <p>Out-of-the-box Windows is trying to run a marathon while carrying a backpack full of bricks. ðŸŽ’</p>
+        <p><b><font color="#38BDF8">Windows Super Smooth</font></b> is the surgical tool that removes them. We don't just "clean" things; we re-program the OS DNA so it finally acts like the high-performance engine you paid for. ðŸŽï¸</p>
       </div>
     </td>
     <td width="40%" align="center" valign="middle">
@@ -30,12 +30,12 @@
 <br>
 
 <!-- PROTOCOL ADVISORY: HIGH CONTRAST -->
-<img src="https://capsule-render.vercel.app/api?type=soft&color=FF0000&height=60&section=header&text=🛑%20PROTOCOL%20ADVISORY&fontSize=30&fontAlignY=50&fontColor=FFFFFF" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=soft&color=FF0000&height=60&section=header&text=ðŸ›‘%20PROTOCOL%20ADVISORY&fontSize=30&fontAlignY=50&fontColor=FFFFFF" width="100%" />
 
 <div align="left">
   <div style="background: rgba(255,0,0,0.05); border: 1px solid #FF0000; padding: 20px; border-radius: 10px;">
-    <b>Don't break your toys. 🧸</b><br>
-    We’re messing with the engine room here (the Kernel). While we’ve tuned this to be as safe as possible, every machine is a snowflake. <b>Use this at your own risk.</b> <br><br>
+    <b>Don't break your toys. ðŸ§¸</b><br>
+    Weâ€™re messing with the engine room here (the Kernel). While weâ€™ve tuned this to be as safe as possible, every machine is a snowflake. <b>Use this at your own risk.</b> <br><br>
     <b>Elite Tip:</b> Create a <b><font color="#FF0000">System Restore Point</font></b> before ignition.
   </div>
 </div>
@@ -64,16 +64,16 @@
   </tr>
   <tr>
     <td width="25%" align="center">
-      <b>🧠 KERNEL PIN</b><br><sub>Zero disk-swap latency.</sub>
+      <b>ðŸ§  KERNEL PIN</b><br><sub>Zero disk-swap latency.</sub>
     </td>
     <td width="25%" align="center">
-      <b>⚡ CPU PRIORITY</b><br><sub>Active window dominance.</sub>
+      <b>âš¡ CPU PRIORITY</b><br><sub>Active window dominance.</sub>
     </td>
     <td width="25%" align="center">
-      <b>🧹 CACHE PURGE</b><br><sub>Dump the pack-rat data.</sub>
+      <b>ðŸ§¹ CACHE PURGE</b><br><sub>Dump the pack-rat data.</sub>
     </td>
     <td width="25%" align="center">
-      <b>🔌 DNS JOLT</b><br><sub>No more dropped connections.</sub>
+      <b>ðŸ”Œ DNS JOLT</b><br><sub>No more dropped connections.</sub>
     </td>
   </tr>
 </table>
@@ -86,7 +86,7 @@
 <div align="left">
   <div style="border: 2px dashed #38BDF8; padding: 25px; border-radius: 20px; background: rgba(56,189,248,0.02);">
     <font size="4">
-      <b>1. DOWNLOAD</b> ➔ <b>2. UNZIP</b> ➔ <b>3. RUN AS ADMIN</b> ➔ <b>4. RESTART</b>
+      <b>1. DOWNLOAD</b> âž” <b>2. UNZIP</b> âž” <b>3. RUN AS ADMIN</b> âž” <b>4. RESTART</b>
     </font>
   </div>
 </div>
@@ -96,7 +96,7 @@
 <div align="center">
   <img src="https://komarev.com/ghpvc/?username=theyonecodes-wss&style=flat-square&color=38bdf8&label=ACCESS_GRANTED"/>
   <br><br>
-  <b><font color="#38BDF8">Current Status:</font></b> <i>CORE</i> 🚀
+  <b><font color="#38BDF8">Current Status:</font></b> <i>CORE</i> ðŸš€
 </div>
 
 </div>
