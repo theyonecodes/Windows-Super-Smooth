@@ -4,8 +4,10 @@ $ErrorActionPreference = 'SilentlyContinue'
 
 # --- SELF ELEVATION ---
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    $args = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
-    Start-Process powershell.exe -Verb RunAs -ArgumentList $args
+    $script = $PSCommandPath
+    if (-not $script) { $script = $MyInvocation.MyCommand.Path }
+    if (-not $script) { $script = $env:TEMP + '\wss.ps1' }
+    Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$script`""
     exit
 }
 
