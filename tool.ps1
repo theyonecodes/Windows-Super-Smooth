@@ -646,13 +646,51 @@ while ($true) {
         '5' { Invoke-PrivacyTweaks }
         '6' { Invoke-Maintenance }
         '7' {
-            $enginePath = Join-Path $env:TEMP 'sc\engine.ps1'
-            if (Test-Path $enginePath) {
-                Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$enginePath`""
-                Write-Host '  AutoPilot started in new window.' -F $ok
-            } else {
-                Write-Host '  Engine not found. Run from main menu first.' -F $err
+            $scDir = Join-Path $env:TEMP 'sc'
+            if (-not (Test-Path $scDir)) { New-Item -Path $scDir -ItemType Directory -Force | Out-Null }
+            $enginePath = Join-Path $scDir 'engine.ps1'
+
+            $engineCode = @'
+$ErrorActionPreference = 'SilentlyContinue'
+$logPath = Join-Path $env:USERPROFILE 'Downloads\systemcare.log'
+function Log($m) { "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $m" | Out-File $logPath -Append }
+function Stop-Hog($n) { Get-Process $n -EA 0 | % { Stop-Process $_ -Force -EA 0; Log "Killed $($_.ProcessName)" } }
+
+Log "AutoPilot started"
+Write-Host "`n  AutoPilot Monitor - Press Ctrl+C to stop" -F Cyan
+Write-Host "  Checking every 30 seconds...`n" -F DarkGray
+
+while ($true) {
+    $ts = Get-Date -Format 'HH:mm:ss'
+
+    # Kill bloat hogs
+    @('NVIDIA App','OneDrive','Teams','Discord','EpicGamesLauncher','Spotify','Steam','Chrome','Edge','Firefox') | % { Stop-Hog $_ }
+
+    # CPU check
+    $cpu = (Get-CimInstance Win32_Processor | Select -First 1).LoadPercentage
+    if ($cpu -gt 85) {
+        Write-Host " [$ts] CPU: ${cpu}% - THROTTLING?" -F Yellow
+        Log "AutoPilot: CPU $cpu%"
+    }
+
+    # GPU temp
+    try {
+        $gpus = nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader 2>$null
+        foreach ($g in $gpus) {
+            if ([int]$g -gt 83) {
+                Write-Host " [$ts] GPU: ${g}C - HOT!" -F Red
+                Log "AutoPilot: GPU ${g}C"
             }
+        }
+    } catch {}
+
+    Start-Sleep -Seconds 30
+}
+'@
+            Set-Content -Path $enginePath -Value $engineCode -Encoding UTF8
+            Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$enginePath`""
+            Write-Host '  AutoPilot started in new window.' -F $ok
+            Log "AutoPilot launched"
             Start-Sleep -Seconds 2
         }
         's' { Stop-Computer -Force }
