@@ -2,6 +2,13 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 $ErrorActionPreference = 'SilentlyContinue'
 
+# --- SELF ELEVATION ---
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $args = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    Start-Process powershell.exe -Verb RunAs -ArgumentList $args
+    exit
+}
+
 # --- LOGGING ---
 $logPath = Join-Path $env:USERPROFILE 'Downloads\systemcare.log'
 function Log($msg) { "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $msg" | Out-File $logPath -Append }
