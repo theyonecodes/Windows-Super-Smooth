@@ -349,6 +349,44 @@ function Invoke-PerformanceTweaks {
     powercfg /setactive SCHEME_CURRENT 2>$null
     $n++; Write-Host ' [OK]' -F $ok
     
+    # GPU - Prefer external NVIDIA over integrated Intel
+    Draw-Section 'GPU PRIORITY'
+    
+    # Set Windows graphics preference to high performance for all apps
+    $gpuPref = 'HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
+    if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }
+    Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+    Write-Host '  Set GPU preference = High Performance (external GPU)' -F $dim; $n++
+    
+    # NVIDIA: prefer max performance mode
+    $nvSvc = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
+    if (Test-Path $nvSvc) {
+        Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+        Write-Host '  NVIDIA set to max performance mode' -F $dim; $n++
+    }
+    
+    # NVIDIA: set all apps to use high-performance GPU via DX settings
+    $nvApp = 'HKLM:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
+    if (!(Test-Path $nvApp)) { New-Item -Path $nvApp -Force | Out-Null }
+    Set-ItemProperty -Path $nvApp -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+    Write-Host '  System-wide GPU preference set' -F $dim; $n++
+    
+    # Hardware-accelerated GPU scheduling (Win10 2004+)
+    $hwSch = 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers'
+    if (!(Test-Path $hwSch)) { New-Item -Path $hwSch -Force | Out-Null }
+    Set-ItemProperty -Path $hwSch -Name 'HwSchMode' -Value 2 -Type DWord -EA SilentlyContinue
+    Write-Host '  Hardware-accelerated GPU scheduling enabled' -F $dim; $n++
+    
+    # Disable Intel GPU power saving (force NVIDIA as primary)
+    $intelGPU = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0001'
+    if (Test-Path $intelGPU) {
+        Set-ItemProperty -Path $intelGPU -Name 'RMHdcpKeyglobZero' -Value 1 -Type DWord -EA SilentlyContinue
+        Write-Host '  Intel GPU power saving reduced' -F $dim; $n++
+    }
+    
     # Network
     Draw-Section 'NETWORK'
     netsh int tcp set global autotuninglevel=normal 2>$null
@@ -408,6 +446,22 @@ function Invoke-GamingMode {
     if (Test-Path $nvidiaSmi) {
         & $nvidiaSmi -pl 100 2>$null
         Write-Host '  NVIDIA set to max power' -F $dim
+    }
+    
+    # Force external NVIDIA GPU for all apps
+    $gpuPref = 'HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
+    if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }
+    Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+    Write-Host '  External GPU forced for all apps' -F $dim
+    
+    # NVIDIA power mode
+    $nvSvc = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
+    if (Test-Path $nvSvc) {
+        Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+        Write-Host '  NVIDIA max performance mode' -F $dim
     }
     
     # Power plan
