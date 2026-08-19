@@ -654,6 +654,177 @@ function Invoke-Uninstaller {
 }
 
 # ============================================
+#  TURBO MODE - ONE-CLICK EVERYTHING
+# ============================================
+function Invoke-TurboMode {
+    Clear-Host
+    Draw-Header 'TURBO MODE'
+    Write-Host '  Applying all optimizations in one click...' -F $warn
+    Write-Host ''
+    
+    $n = 0
+    
+    # 1. Power plan
+    Draw-Section 'POWER PLAN'
+    powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
+    powercfg /change monitor-timeout-ac 0 2>$null
+    powercfg /change standby-timeout-ac 0 2>$null
+    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTMODE 2 2>$null
+    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTPOL 100 2>$null
+    powercfg /setactive SCHEME_CURRENT 2>$null
+    Write-Host '  High Performance plan activated' -F $dim; $n++
+    
+    # 2. Visual effects
+    Draw-Section 'VISUAL EFFECTS'
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects' -Name 'VisualFXSetting' -Value 2 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'FontSmoothing' -Value '2' -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'EnableTransparency' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop\WindowMetrics' -Name 'MinAnimate' -Value '0' -EA SilentlyContinue
+    Write-Host '  Best performance visual effects' -F $dim; $n += 4
+    
+    # 3. Game Bar / DVR
+    Draw-Section 'GAME BAR / DVR'
+    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR' -Name 'AppCaptureEnabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\System\GameConfigStore' -Name 'GameDVR_Enabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -Name 'AllowGameDVR' -Value 0 -EA SilentlyContinue
+    Write-Host '  GameBar/DVR disabled' -F $dim; $n += 3
+    
+    # 4. Background apps
+    Draw-Section 'BACKGROUND APPS'
+    $bgApps = @(
+        'Microsoft.Windows.Photos','Microsoft.WindowsCamera','Microsoft.YourPhone'
+        'Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.MicrosoftSolitaireCollection'
+        'Microsoft.People','Microsoft.WindowsFeedbackHub','Microsoft.BingNews'
+        'Microsoft.BingWeather','Microsoft.Todos','Microsoft.PowerAutomateDesktop'
+        'Microsoft.WindowsAlarms','Clipchamp.Clipchamp','Microsoft.WindowsMaps'
+        'Microsoft.MicrosoftOfficeHub','Microsoft.SkypeApp','Microsoft.OneConnect'
+        'Microsoft.ZuneVideo','Microsoft.ZuneMusic'
+    )
+    foreach ($app in $bgApps) {
+        $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications\$app"
+        New-Item -Path $path -Force | Out-Null
+        Set-ItemProperty -Path $path -Name 'Disabled' -Value 1 -EA SilentlyContinue
+    }
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications' -Name 'GlobalUserDisabled' -Value 1 -EA SilentlyContinue
+    Write-Host "  $($bgApps.Count) background apps disabled" -F $dim; $n += $bgApps.Count
+    
+    # 5. Notifications & ads
+    Draw-Section 'NOTIFICATIONS & ADS'
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications' -Name 'ToastEnabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SystemPaneSuggestionsEnabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SilentInstalledAppsEnabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-310093Enabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo' -Name 'Enabled' -Value 0 -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowSyncProviderNotifications' -Value 0 -EA SilentlyContinue
+    Write-Host '  Toasts, tips, ads disabled' -F $dim; $n += 8
+    
+    # 6. Services
+    Draw-Section 'SERVICES'
+    $svcs = @(
+        'DiagTrack','SysMain','WSearch','MapsBroker','lfsvc','SharedAccess'
+        'XblAuthManager','XblGameSave','XboxNetApiSvc','XboxGipSvc'
+        'RetailDemo','WerSvc','WbioSrvc','WalletService','WpcMonSvc'
+        'SCardSvr','ScDeviceEnum','SEMgrSvc','RpcLocator'
+    )
+    foreach ($svc in $svcs) {
+        $s = Get-Service $svc -EA SilentlyContinue
+        if ($s -and $s.StartType -ne 'Disabled') {
+            Stop-Service $svc -Force -EA SilentlyContinue
+            Set-Service $svc -StartupType Disabled -EA SilentlyContinue
+            $n++
+        }
+    }
+    Write-Host "  $($svcs.Count) services disabled" -F $dim
+    
+    # 7. Memory & startup
+    Draw-Section 'MEMORY & STARTUP'
+    Disable-MMAgent -MemoryCompression -EA SilentlyContinue
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize' -Name 'StartupDelayInMSec' -Value 0 -EA SilentlyContinue
+    Write-Host '  Memory compression disabled, startup delay = 0' -F $dim; $n += 2
+    
+    # 8. Delivery optimization
+    Draw-Section 'DELIVERY OPTIMIZATION'
+    New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Force | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Name 'DODownloadMode' -Value 0 -EA SilentlyContinue
+    Write-Host '  P2P update sharing disabled' -F $dim; $n++
+    
+    # 9. GPU priority
+    Draw-Section 'GPU PRIORITY'
+    $gpuPref = 'HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
+    if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }
+    Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+    $nvSvc = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
+    if (Test-Path $nvSvc) {
+        Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
+        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+    }
+    $nvidiaSmi = 'C:\Windows\System32\nvidia-smi.exe'
+    if (Test-Path $nvidiaSmi) { & $nvidiaSmi -pl 100 2>$null }
+    Write-Host '  External GPU forced, NVIDIA max power' -F $dim; $n += 2
+    
+    # 10. Temp cleanup
+    Draw-Section 'TEMP CLEANUP'
+    $before = (Get-ChildItem $env:TEMP -Recurse -EA SilentlyContinue | Measure-Object Length -Sum).Sum
+    Remove-Item "$env:TEMP\*" -Recurse -Force -EA SilentlyContinue
+    Remove-Item 'C:\Windows\Temp\*' -Recurse -Force -EA SilentlyContinue
+    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -EA SilentlyContinue
+    Clear-DnsClientCache -EA SilentlyContinue
+    Stop-Service wuauserv -Force -EA SilentlyContinue
+    Remove-Item 'C:\Windows\SoftwareDistribution\Download\*' -Recurse -Force -EA SilentlyContinue
+    Start-Service wuauserv -EA SilentlyContinue
+    Clear-RecycleBin -Force -EA SilentlyContinue
+    $after = (Get-ChildItem $env:TEMP -Recurse -EA SilentlyContinue | Measure-Object Length -Sum).Sum
+    $freed = [math]::Round(($before - $after) / 1MB, 0)
+    Write-Host "  Freed $freed MB" -F $ok; $n++
+    
+    # 11. Explorer health
+    Draw-Section 'EXPLORER HEALTH'
+    $exp = Get-Process explorer -EA SilentlyContinue
+    if ($exp) {
+        $memMB = [math]::Round(($exp | Measure-Object WorkingSet64 -Sum).Sum / 1MB, 0)
+        if ($memMB -gt 300) {
+            Stop-Process -Name explorer -Force -EA SilentlyContinue
+            Start-Sleep -Seconds 2
+            Start-Process explorer.exe
+            Write-Host "  Explorer restarted (was $memMB MB)" -F $ok
+        } else {
+            Write-Host "  Explorer healthy ($memMB MB)" -F $dim
+        }
+    }
+    
+    # 12. Kill hogs
+    Draw-Section 'KILLING HOGS'
+    $hogs = @('NVIDIA App','OneDrive','Teams','Discord','EpicGamesLauncher','Spotify','Steam','Chrome','Edge','Firefox')
+    foreach ($h in $hogs) {
+        Get-Process $h -EA SilentlyContinue | ForEach-Object {
+            Stop-Process $_ -Force -EA SilentlyContinue
+        }
+    }
+    Write-Host '  Background hogs killed' -F $dim
+    
+    # Summary
+    Write-Host ''
+    Write-Host "  Applied $n optimizations." -F $ok
+    Write-Host ''
+    
+    $os = Get-CimInstance Win32_OperatingSystem
+    $cpuLoad = (Get-CimInstance Win32_Processor | Select -First 1).LoadPercentage
+    $usedGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 1)
+    $totalGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 1)
+    Write-Host "  CPU:  $cpuLoad%" -F White
+    Write-Host "  RAM:  $usedGB / $totalGB GB" -F White
+    Write-Host "  Plan: $((powercfg /getactivescheme 2>$null) -replace '.*\((.+)\)','$1')" -F White
+    Write-Host ''
+    Write-Host '  TURBO MODE ACTIVE' -F $ok
+    Log "TurboMode: Applied $n optimizations"
+    Wait-User
+}
+
+# ============================================
 #  MAIN MENU
 # ============================================
 Set-Theme
@@ -679,6 +850,7 @@ while ($true) {
         @{ Name = 'Privacy'; Desc = 'Disable telemetry' }
         @{ Name = 'Maintenance'; Desc = 'Clean temp, flush DNS' }
         @{ Name = 'Start AutoPilot'; Desc = 'Background monitor' }
+        @{ Name = 'Turbo Mode'; Desc = 'One-click apply ALL' }
     )
     
     Draw-Menu -Items $menu
@@ -747,6 +919,7 @@ while ($true) {
             Log "AutoPilot launched"
             Start-Sleep -Seconds 2
         }
+        '8' { Invoke-TurboMode }
         's' { Stop-Computer -Force }
         'r' { Restart-Computer -Force }
         'x' { exit }
