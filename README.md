@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 <!-- 2026 BULLETPROOF HERO: CUSTOM SVG -->
 <img src="assets/branding/hero.svg" width="100%" />
@@ -17,8 +17,8 @@
   <tr>
     <td width="60%" valign="middle">
       <div style="background: #1e293b; border-left: 5px solid #38BDF8; padding: 25px; border-radius: 12px; box-shadow: 15px 15px 0px rgba(56,189,248,0.1);">
-        <p>Out-of-the-box Windows is trying to run a marathon while carrying a backpack full of bricks. ðŸŽ’</p>
-        <p><b><font color="#38BDF8">Windows Super Smooth</font></b> is the surgical tool that removes them. We don't just "clean" things; we re-program the OS DNA so it finally acts like the high-performance engine you paid for. ðŸŽï¸</p>
+        <p>Out-of-the-box Windows is trying to run a marathon while carrying a backpack full of bricks.</p>
+        <p><b><font color="#38BDF8">Windows Super Smooth</font></b> is the surgical tool that removes them. We don't just "clean" things; we re-program the OS DNA so it finally acts like the high-performance engine you paid for.</p>
       </div>
     </td>
     <td width="40%" align="center" valign="middle">
