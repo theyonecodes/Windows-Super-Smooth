@@ -1,33 +1,11 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# --- SELF ELEVATION (must be first, before ErrorActionPreference) ---
+# --- SELF ELEVATION ---
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    $scriptPath = $null
-    if ($PSCommandPath -and (Test-Path $PSCommandPath)) { $scriptPath = $PSCommandPath }
-    elseif ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) { $scriptPath = $MyInvocation.MyCommand.Path }
-    elseif ($PSScriptRoot -and $MyInvocation.MyCommand.Name) {
-        $candidate = Join-Path $PSScriptRoot $MyInvocation.MyCommand.Name
-        if (Test-Path $candidate) { $scriptPath = $candidate }
-    }
-    if (-not $scriptPath) {
-        $found = Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter "WindowsSuperSmooth.ps1" -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($found) { $scriptPath = $found.FullName }
-    }
-    if (-not $scriptPath) { $scriptPath = Join-Path $env:USERPROFILE 'Downloads\WindowsSuperSmooth.ps1' }
-    
-    # Copy to temp to avoid path issues
-    $tempCopy = Join-Path $env:TEMP 'wss.ps1'
-    Copy-Item $scriptPath $tempCopy -Force -ErrorAction SilentlyContinue
-    
-    $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$tempCopy`""
-    try {
-        Start-Process powershell.exe -Verb RunAs -ArgumentList $argList -ErrorAction Stop
-    } catch {
-        Write-Host "Failed to elevate: $($_.Exception.Message)" -ForegroundColor Red
-        Start-Sleep -Seconds 5
-    }
-    exit
+    $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    Start-Process powershell.exe -Verb RunAs -ArgumentList $argList 2>$null
+    [Environment]::Exit(0)
 }
 
 $ErrorActionPreference = 'SilentlyContinue'
