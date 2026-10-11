@@ -10,6 +10,16 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 
 $ErrorActionPreference = 'SilentlyContinue'
 
+# --- TOOLKIT INTEGRATION ---
+$toolkitPath = Join-Path $PSScriptRoot 'vendor\toolkit'
+if (Test-Path "$toolkitPath\backup-engine\powershell\BackupEngine.psm1") {
+    Import-Module "$toolkitPath\backup-engine\powershell\BackupEngine.psm1" -Force
+    $hasToolkit = $true
+} else {
+    $hasToolkit = $false
+    Write-Warning "Toolkit not found at $toolkitPath - backup protection disabled"
+}
+
 # --- LOGGING ---
 $logPath = Join-Path $env:USERPROFILE 'Downloads\systemcare.log'
 function Log($msg) { "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $msg" | Out-File $logPath -Append }
@@ -78,16 +88,43 @@ function Do-Choice {
     return -1
 }
 
+# --- ENHANCED RUN-TASK WITH BACKUP PROTECTION ---
 function Run-Task {
-    param([string]$Label, [scriptblock]$Code)
+    param(
+        [string]$Label,
+        [scriptblock]$Code,
+        [string[]]$RegistryKeys = @(),
+        [string[]]$FilePaths = @(),
+        [switch]$BackupBCD,
+        [switch]$BackupEFI
+    )
+
     Write-Host "  > $Label" -F $warn -NoNewline
-    try {
-        & $Code
-        Write-Host " [OK]" -F $ok
-        Log "OK: $Label"
-    } catch {
-        Write-Host " [SKIP]" -F $dim
-        Log "SKIP: $Label - $($_.Exception.Message)"
+
+    if ($hasToolkit) {
+        try {
+            $result = Invoke-WithBackup -ToolName "Windows-Super-Smooth" -Description $Label `
+                -RegistryKeys $RegistryKeys -FilePaths $FilePaths `
+                -BackupBCD:$BackupBCD -BackupEFI:$BackupEFI `
+                -ActionScriptBlock $Code
+            Write-Host " [OK]" -F $ok
+            Log "OK: $Label (backup: $($result.BackupDir))"
+            return
+        } catch {
+            Write-Host " [FAILED]" -F $err
+            Log "FAILED: $Label - $($_.Exception.Message)"
+            return
+        }
+    } else {
+        # Fallback without backup
+        try {
+            & $Code
+            Write-Host " [OK]" -F $ok
+            Log "OK: $Label"
+        } catch {
+            Write-Host " [SKIP]" -F $dim
+            Log "SKIP: $Label - $($_.Exception.Message)"
+        }
     }
 }
 
@@ -211,7 +248,7 @@ function Invoke-Debloat {
 }
 
 # ============================================
-#  PERFORMANCE TWEAKS
+#  PERFORMANCE TWEAKS (WITH BACKUP)
 # ============================================
 function Invoke-PerformanceTweaks {
     Clear-Host
@@ -251,9 +288,9 @@ function Invoke-PerformanceTweaks {
         if ($s) {
             if ($s.Status -eq 'Running') { Stop-Service $svc.Key -Force -EA SilentlyContinue }
             if ($s.StartType -ne 'Disabled') {
-                Set-Service $svc.Key -StartupType Disabled -EA SilentlyContinue
-                Write-Host "  Disabled $($svc.Value)" -F $dim
-                $n++
+                Run-Task "Disable $($svc.Value) service" `
+                    -Code { Set-Service $args[0] -StartupType Disabled -EA SilentlyContinue } `
+                    -RegistryKeys "HKLM:\SYSTEM\CurrentControlSet\Services\$($svc.Key)"
             }
         }
     }
@@ -276,8 +313,9 @@ function Invoke-PerformanceTweaks {
         $parts = $t.Split('/')
         $taskName = $parts[-1]
         $taskPath = ($parts[0..($parts.Count-2)] -join '/') + '/'
-        Disable-ScheduledTask -TaskPath $taskPath -TaskName $taskName -EA SilentlyContinue | Out-Null
-        if ($?) { Write-Host "  Disabled $taskName" -F $dim; $n++ }
+        Run-Task "Disable scheduled task: $taskName" `
+            -Code { Disable-ScheduledTask -TaskPath $args[0] -TaskName $args[1] -EA SilentlyContinue } `
+            -FilePaths @("C:\Windows\System32\Tasks$taskPath$taskName")
     }
     
     # Registry tweaks
@@ -309,45 +347,54 @@ function Invoke-PerformanceTweaks {
     )
     foreach ($t in $tweaks) {
         $path = $t[0]; $name = $t[1]; $val = $t[2]
-        if (!(Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
-        Set-ItemProperty -Path $path -Name $name -Value $val -Type DWord -EA SilentlyContinue
-        Write-Host "  Set $name = $val" -F $dim
+        Run-Task "Registry: $name = $val" `
+            -Code { if (!(Test-Path $args[0])) { New-Item -Path $args[0] -Force | Out-Null }; Set-ItemProperty -Path $args[0] -Name $args[1] -Value $args[2] -Type DWord -EA SilentlyContinue } `
+            -RegistryKeys $path
         $n++
     }
     
     # MMCSS Games profile
     $mmcss = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'
-    if (!(Test-Path $mmcss)) { New-Item -Path $mmcss -Force | Out-Null }
-    Set-ItemProperty -Path $mmcss -Name 'GPU Priority' -Value 8 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path $mmcss -Name 'Priority' -Value 6 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path $mmcss -Name 'Scheduling Category' -Value 'High' -Type String -EA SilentlyContinue
-    Set-ItemProperty -Path $mmcss -Name 'SFIO Priority' -Value 'High' -Type String -EA SilentlyContinue
+    Run-Task "MMCSS Games profile" `
+        -Code { 
+            if (!(Test-Path $mmcss)) { New-Item -Path $mmcss -Force | Out-Null }
+            Set-ItemProperty -Path $mmcss -Name 'GPU Priority' -Value 8 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path $mmcss -Name 'Priority' -Value 6 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path $mmcss -Name 'Scheduling Category' -Value 'High' -Type String -EA SilentlyContinue
+            Set-ItemProperty -Path $mmcss -Name 'SFIO Priority' -Value 'High' -Type String -EA SilentlyContinue
+        } `
+        -RegistryKeys $mmcss
     $n += 4
     
     # Disable memory compression
     Write-Host ''
     Write-Host '  Disabling memory compression...' -F $dim -NoNewline
-    Disable-MMAgent -MemoryCompression -EA SilentlyContinue
-    Get-Process 'Memory Compression' -EA SilentlyContinue | Stop-Process -Force -EA SilentlyContinue
+    Run-Task "Disable memory compression" `
+        -Code { Disable-MMAgent -MemoryCompression -EA SilentlyContinue; Get-Process 'Memory Compression' -EA SilentlyContinue | Stop-Process -Force -EA SilentlyContinue }
     $n++; Write-Host ' [OK]' -F $ok
     
     # Disable power throttling
     Write-Host '  Disabling power throttling...' -F $dim -NoNewline
     $tp = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling'
-    if (!(Test-Path $tp)) { New-Item -Path $tp -Force | Out-Null }
-    Set-ItemProperty -Path $tp -Name 'PowerThrottlingOff' -Value 1 -Type DWord -EA SilentlyContinue
+    Run-Task "Disable power throttling" `
+        -Code { if (!(Test-Path $tp)) { New-Item -Path $tp -Force | Out-Null }; Set-ItemProperty -Path $tp -Name 'PowerThrottlingOff' -Value 1 -Type DWord -EA SilentlyContinue } `
+        -RegistryKeys $tp
     $n++; Write-Host ' [OK]' -F $ok
     
     # Power plan
     Write-Host '  Setting High Performance plan...' -F $dim -NoNewline
-    powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
-    powercfg /change monitor-timeout-ac 0 2>$null
-    powercfg /change standby-timeout-ac 0 2>$null
-    powercfg /change hibernate-timeout-ac 0 2>$null
-    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTMODE 2 2>$null
-    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTPOL 100 2>$null
-    powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 4876c0e8-2c04-4ce8-b5ac-2b30b084b0ed 0 2>$null
-    powercfg /setactive SCHEME_CURRENT 2>$null
+    Run-Task "High Performance power plan" `
+        -Code {
+            powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
+            powercfg /change monitor-timeout-ac 0 2>$null
+            powercfg /change standby-timeout-ac 0 2>$null
+            powercfg /change hibernate-timeout-ac 0 2>$null
+            powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTMODE 2 2>$null
+            powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTPOL 100 2>$null
+            powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 4876c0e8-2c04-4ce8-b5ac-2b30b084b0ed 0 2>$null
+            powercfg /setactive SCHEME_CURRENT 2>$null
+        } `
+        -BackupBCD
     $n++; Write-Host ' [OK]' -F $ok
     
     # GPU - Prefer external NVIDIA over integrated Intel
@@ -355,47 +402,59 @@ function Invoke-PerformanceTweaks {
     
     # Set Windows graphics preference to high performance for all apps
     $gpuPref = 'HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
-    if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }
-    Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+    Run-Task "System GPU preference = High Performance" `
+        -Code { if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }; Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue } `
+        -RegistryKeys $gpuPref
     Write-Host '  Set GPU preference = High Performance (external GPU)' -F $dim; $n++
     
     # NVIDIA: prefer max performance mode
     $nvSvc = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
     if (Test-Path $nvSvc) {
-        Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+        Run-Task "NVIDIA max performance mode" `
+            -Code {
+                Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+            } `
+            -RegistryKeys $nvSvc
         Write-Host '  NVIDIA set to max performance mode' -F $dim; $n++
     }
     
     # NVIDIA: set all apps to use high-performance GPU via DX settings
     $nvApp = 'HKLM:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
-    if (!(Test-Path $nvApp)) { New-Item -Path $nvApp -Force | Out-Null }
-    Set-ItemProperty -Path $nvApp -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+    Run-Task "System-wide GPU preference" `
+        -Code { if (!(Test-Path $nvApp)) { New-Item -Path $nvApp -Force | Out-Null }; Set-ItemProperty -Path $nvApp -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue } `
+        -RegistryKeys $nvApp
     Write-Host '  System-wide GPU preference set' -F $dim; $n++
     
     # Hardware-accelerated GPU scheduling (Win10 2004+)
     $hwSch = 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers'
-    if (!(Test-Path $hwSch)) { New-Item -Path $hwSch -Force | Out-Null }
-    Set-ItemProperty -Path $hwSch -Name 'HwSchMode' -Value 2 -Type DWord -EA SilentlyContinue
+    Run-Task "Hardware-accelerated GPU scheduling" `
+        -Code { if (!(Test-Path $hwSch)) { New-Item -Path $hwSch -Force | Out-Null }; Set-ItemProperty -Path $hwSch -Name 'HwSchMode' -Value 2 -Type DWord -EA SilentlyContinue } `
+        -RegistryKeys $hwSch
     Write-Host '  Hardware-accelerated GPU scheduling enabled' -F $dim; $n++
     
     # Disable Intel GPU power saving (force NVIDIA as primary)
     $intelGPU = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0001'
     if (Test-Path $intelGPU) {
-        Set-ItemProperty -Path $intelGPU -Name 'RMHdcpKeyglobZero' -Value 1 -Type DWord -EA SilentlyContinue
+        Run-Task "Reduce Intel GPU power saving" `
+            -Code { Set-ItemProperty -Path $intelGPU -Name 'RMHdcpKeyglobZero' -Value 1 -Type DWord -EA SilentlyContinue } `
+            -RegistryKeys $intelGPU
         Write-Host '  Intel GPU power saving reduced' -F $dim; $n++
     }
     
     # Network
     Draw-Section 'NETWORK'
-    netsh int tcp set global autotuninglevel=normal 2>$null
-    netsh int tcp set global chimney=enabled 2>$null
-    netsh int tcp set global dca=enabled 2>$null
-    netsh int tcp set global netdma=enabled 2>$null
-    netsh int tcp set global timestamps=disabled 2>$null
-    netsh int tcp set global rss=enabled 2>$null
+    Run-Task "TCP stack optimization" `
+        -Code {
+            netsh int tcp set global autotuninglevel=normal 2>$null
+            netsh int tcp set global chimney=enabled 2>$null
+            netsh int tcp set global dca=enabled 2>$null
+            netsh int tcp set global netdma=enabled 2>$null
+            netsh int tcp set global timestamps=disabled 2>$null
+            netsh int tcp set global rss=enabled 2>$null
+        }
     $n += 6; Write-Host '  TCP stack optimized' -F $dim
     
     # Flush
@@ -430,46 +489,63 @@ function Invoke-GamingMode {
     
     # Gaming registry tweaks
     Draw-Section 'GAMING REGISTRY'
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile' -Name 'SystemResponsiveness' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games' -Name 'GPU Priority' -Value 8 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games' -Name 'Priority' -Value 6 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games' -Name 'SFIO Priority' -Value 'High' -Type String -EA SilentlyContinue
+    Run-Task "MMCSS gaming tuning" `
+        -Code {
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile' -Name 'SystemResponsiveness' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games' -Name 'GPU Priority' -Value 8 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games' -Name 'Priority' -Value 6 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games' -Name 'SFIO Priority' -Value 'High' -Type String -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile', 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games')
     Write-Host '  MMCSS tuned for gaming' -F $dim
     
     # Disable GameBar and GameDVR
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR' -Name 'AppCaptureEnabled' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\System\GameConfigStore' -Name 'GameDVR_Enabled' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -Name 'AllowGameDVR' -Value 0 -Type DWord -EA SilentlyContinue
+    Run-Task "Disable GameBar/GameDVR" `
+        -Code {
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR' -Name 'AppCaptureEnabled' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\System\GameConfigStore' -Name 'GameDVR_Enabled' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -Name 'AllowGameDVR' -Value 0 -Type DWord -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR', 'HKCU:\System\GameConfigStore', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR')
     Write-Host '  GameBar/GameDVR disabled' -F $dim
     
     # NVIDIA max performance
     $nvidiaSmi = 'C:\Windows\System32\nvidia-smi.exe'
     if (Test-Path $nvidiaSmi) {
-        & $nvidiaSmi -pl 100 2>$null
+        Run-Task "NVIDIA max power limit" -Code { & $nvidiaSmi -pl 100 2>$null }
         Write-Host '  NVIDIA set to max power' -F $dim
     }
     
     # Force external NVIDIA GPU for all apps
     $gpuPref = 'HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
-    if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }
-    Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+    Run-Task "Force external GPU for all apps" `
+        -Code { if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }; Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue } `
+        -RegistryKeys $gpuPref
     Write-Host '  External GPU forced for all apps' -F $dim
     
     # NVIDIA power mode
     $nvSvc = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
     if (Test-Path $nvSvc) {
-        Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+        Run-Task "NVIDIA max performance mode" `
+            -Code {
+                Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+            } `
+            -RegistryKeys $nvSvc
         Write-Host '  NVIDIA max performance mode' -F $dim
     }
     
     # Power plan
-    powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
-    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTMODE 2 2>$null
-    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTPOL 100 2>$null
-    powercfg /setactive SCHEME_CURRENT 2>$null
+    Run-Task "High Performance power plan" `
+        -Code {
+            powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
+            powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTMODE 2 2>$null
+            powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTPOL 100 2>$null
+            powercfg /setactive SCHEME_CURRENT 2>$null
+        } `
+        -BackupBCD
     Write-Host '  High Performance power plan' -F $dim
     
     # Set process priority
@@ -505,49 +581,77 @@ function Invoke-PrivacyTweaks {
     $n = 0
     
     # Disable telemetry
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' -Name 'AllowTelemetry' -Value 0 -Type DWord -EA SilentlyContinue
-    Stop-Service DiagTrack -Force -EA SilentlyContinue
-    Set-Service DiagTrack -StartupType Disabled -EA SilentlyContinue
-    Stop-Service dmwappushservice -Force -EA SilentlyContinue
-    Set-Service dmwappushservice -StartupType Disabled -EA SilentlyContinue
+    Run-Task "Disable telemetry services" `
+        -Code {
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' -Name 'AllowTelemetry' -Value 0 -Type DWord -EA SilentlyContinue
+            Stop-Service DiagTrack -Force -EA SilentlyContinue
+            Set-Service DiagTrack -StartupType Disabled -EA SilentlyContinue
+            Stop-Service dmwappushservice -Force -EA SilentlyContinue
+            Set-Service dmwappushservice -StartupType Disabled -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection', 'HKLM:\SYSTEM\CurrentControlSet\Services\DiagTrack', 'HKLM:\SYSTEM\CurrentControlSet\Services\dmwappushservice')
     Write-Host '  Telemetry disabled' -F $dim; $n += 3
     
     # Disable advertising ID
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo' -Name 'Enabled' -Value 0 -Type DWord -EA SilentlyContinue
+    Run-Task "Disable advertising ID" `
+        -Code { Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo' -Name 'Enabled' -Value 0 -Type DWord -EA SilentlyContinue } `
+        -RegistryKeys 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo'
     Write-Host '  Advertising ID disabled' -F $dim; $n++
     
     # Disable location tracking
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors' -Name 'DisableLocation' -Value 1 -Type DWord -EA SilentlyContinue
-    Stop-Service lfsvc -Force -EA SilentlyContinue
-    Set-Service lfsvc -StartupType Disabled -EA SilentlyContinue
+    Run-Task "Disable location tracking" `
+        -Code {
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors' -Name 'DisableLocation' -Value 1 -Type DWord -EA SilentlyContinue
+            Stop-Service lfsvc -Force -EA SilentlyContinue
+            Set-Service lfsvc -StartupType Disabled -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors', 'HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc')
     Write-Host '  Location tracking disabled' -F $dim; $n += 2
     
     # Disable Cortana
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search' -Name 'AllowCortana' -Value 0 -Type DWord -EA SilentlyContinue
+    Run-Task "Disable Cortana" `
+        -Code { Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search' -Name 'AllowCortana' -Value 0 -Type DWord -EA SilentlyContinue } `
+        -RegistryKeys 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
     Write-Host '  Cortana disabled' -F $dim; $n++
     
     # Disable activity history
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'EnableActivityFeed' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'PublishUserActivities' -Value 0 -Type DWord -EA SilentlyContinue
+    Run-Task "Disable activity history" `
+        -Code {
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'EnableActivityFeed' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'PublishUserActivities' -Value 0 -Type DWord -EA SilentlyContinue
+        } `
+        -RegistryKeys 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'
     Write-Host '  Activity history disabled' -F $dim; $n += 2
     
     # Disable tips and suggestions
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-310093Enabled' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SoftLandingEnabled' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowSyncProviderNotifications' -Value 0 -Type DWord -EA SilentlyContinue
+    Run-Task "Disable tips and suggestions" `
+        -Code {
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-310093Enabled' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SoftLandingEnabled' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowSyncProviderNotifications' -Value 0 -Type DWord -EA SilentlyContinue
+        } `
+        -RegistryKeys 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'
     Write-Host '  Tips and suggestions disabled' -F $dim; $n += 5
     
     # Disable feedback
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Siuf\Rules' -Name 'NumberOfSIUFInPeriod' -Value 0 -Type DWord -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Siuf\Rules' -Name 'PeriodInNanoSeconds' -Value 0 -Type DWord -EA SilentlyContinue
+    Run-Task "Disable feedback prompts" `
+        -Code {
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Siuf\Rules' -Name 'NumberOfSIUFInPeriod' -Value 0 -Type DWord -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Siuf\Rules' -Name 'PeriodInNanoSeconds' -Value 0 -Type DWord -EA SilentlyContinue
+        } `
+        -RegistryKeys 'HKCU:\SOFTWARE\Microsoft\Siuf\Rules'
     Write-Host '  Feedback prompts disabled' -F $dim; $n += 2
     
     # Disable error reporting
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' -Name 'Disabled' -Value 1 -Type DWord -EA SilentlyContinue
-    Stop-Service WerSvc -Force -EA SilentlyContinue
-    Set-Service WerSvc -StartupType Disabled -EA SilentlyContinue
+    Run-Task "Disable error reporting" `
+        -Code {
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' -Name 'Disabled' -Value 1 -Type DWord -EA SilentlyContinue
+            Stop-Service WerSvc -Force -EA SilentlyContinue
+            Set-Service WerSvc -StartupType Disabled -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting', 'HKLM:\SYSTEM\CurrentControlSet\Services\WerSvc')
     Write-Host '  Error reporting disabled' -F $dim; $n += 2
     
     Write-Host ''
@@ -586,9 +690,13 @@ function Invoke-Maintenance {
     
     # Reset Windows Update cache
     Write-Host '  Resetting Windows Update cache...' -F $dim -NoNewline
-    Stop-Service wuauserv -Force -EA SilentlyContinue
-    Remove-Item 'C:\Windows\SoftwareDistribution\Download' -Recurse -Force -EA SilentlyContinue
-    Start-Service wuauserv -EA SilentlyContinue
+    Run-Task "Reset Windows Update cache" `
+        -Code {
+            Stop-Service wuauserv -Force -EA SilentlyContinue
+            Remove-Item 'C:\Windows\SoftwareDistribution\Download' -Recurse -Force -EA SilentlyContinue
+            Start-Service wuauserv -EA SilentlyContinue
+        } `
+        -FilePaths @('C:\Windows\SoftwareDistribution\Download')
     Write-Host ' [OK]' -F $ok
     
     # Clear event logs
@@ -655,7 +763,7 @@ function Invoke-Uninstaller {
 }
 
 # ============================================
-#  TURBO MODE - ONE-CLICK EVERYTHING
+#  TURBO MODE - ONE-CLICK EVERYTHING (WITH BACKUP)
 # ============================================
 function Invoke-TurboMode {
     Clear-Host
@@ -667,27 +775,39 @@ function Invoke-TurboMode {
     
     # 1. Power plan
     Draw-Section 'POWER PLAN'
-    powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
-    powercfg /change monitor-timeout-ac 0 2>$null
-    powercfg /change standby-timeout-ac 0 2>$null
-    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTMODE 2 2>$null
-    powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTPOL 100 2>$null
-    powercfg /setactive SCHEME_CURRENT 2>$null
+    Run-Task "High Performance plan" `
+        -Code {
+            powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
+            powercfg /change monitor-timeout-ac 0 2>$null
+            powercfg /change standby-timeout-ac 0 2>$null
+            powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTMODE 2 2>$null
+            powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PERFBOOSTPOL 100 2>$null
+            powercfg /setactive SCHEME_CURRENT 2>$null
+        } `
+        -BackupBCD
     Write-Host '  High Performance plan activated' -F $dim; $n++
     
     # 2. Visual effects
     Draw-Section 'VISUAL EFFECTS'
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects' -Name 'VisualFXSetting' -Value 2 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'FontSmoothing' -Value '2' -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'EnableTransparency' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop\WindowMetrics' -Name 'MinAnimate' -Value '0' -EA SilentlyContinue
+    Run-Task "Visual effects = Best performance" `
+        -Code {
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects' -Name 'VisualFXSetting' -Value 2 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'FontSmoothing' -Value '2' -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'EnableTransparency' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop\WindowMetrics' -Name 'MinAnimate' -Value '0' -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects', 'HKCU:\Control Panel\Desktop', 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize', 'HKCU:\Control Panel\Desktop\WindowMetrics')
     Write-Host '  Best performance visual effects' -F $dim; $n += 4
     
     # 3. Game Bar / DVR
     Draw-Section 'GAME BAR / DVR'
-    Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR' -Name 'AppCaptureEnabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\System\GameConfigStore' -Name 'GameDVR_Enabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -Name 'AllowGameDVR' -Value 0 -EA SilentlyContinue
+    Run-Task "Disable GameBar/DVR" `
+        -Code {
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR' -Name 'AppCaptureEnabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\System\GameConfigStore' -Name 'GameDVR_Enabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -Name 'AllowGameDVR' -Value 0 -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR', 'HKCU:\System\GameConfigStore', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR')
     Write-Host '  GameBar/DVR disabled' -F $dim; $n += 3
     
     # 4. Background apps
@@ -703,22 +823,29 @@ function Invoke-TurboMode {
     )
     foreach ($app in $bgApps) {
         $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications\$app"
-        New-Item -Path $path -Force | Out-Null
-        Set-ItemProperty -Path $path -Name 'Disabled' -Value 1 -EA SilentlyContinue
+        Run-Task "Disable background app: $app" `
+            -Code { New-Item -Path $path -Force | Out-Null; Set-ItemProperty -Path $path -Name 'Disabled' -Value 1 -EA SilentlyContinue } `
+            -RegistryKeys $path
     }
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications' -Name 'GlobalUserDisabled' -Value 1 -EA SilentlyContinue
+    Run-Task "Global background apps disabled" `
+        -Code { Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications' -Name 'GlobalUserDisabled' -Value 1 -EA SilentlyContinue } `
+        -RegistryKeys 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications'
     Write-Host "  $($bgApps.Count) background apps disabled" -F $dim; $n += $bgApps.Count
     
     # 5. Notifications & ads
     Draw-Section 'NOTIFICATIONS & ADS'
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications' -Name 'ToastEnabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SystemPaneSuggestionsEnabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SilentInstalledAppsEnabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-310093Enabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo' -Name 'Enabled' -Value 0 -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowSyncProviderNotifications' -Value 0 -EA SilentlyContinue
+    Run-Task "Disable notifications, tips, ads" `
+        -Code {
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications' -Name 'ToastEnabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SystemPaneSuggestionsEnabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SilentInstalledAppsEnabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-310093Enabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo' -Name 'Enabled' -Value 0 -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowSyncProviderNotifications' -Value 0 -EA SilentlyContinue
+        } `
+        -RegistryKeys @('HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications', 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager', 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo', 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced')
     Write-Host '  Toasts, tips, ads disabled' -F $dim; $n += 8
     
     # 6. Services
@@ -732,8 +859,9 @@ function Invoke-TurboMode {
     foreach ($svc in $svcs) {
         $s = Get-Service $svc -EA SilentlyContinue
         if ($s -and $s.StartType -ne 'Disabled') {
-            Stop-Service $svc -Force -EA SilentlyContinue
-            Set-Service $svc -StartupType Disabled -EA SilentlyContinue
+            Run-Task "Disable service: $svc" `
+                -Code { Stop-Service $svc -Force -EA SilentlyContinue; Set-Service $svc -StartupType Disabled -EA SilentlyContinue } `
+                -RegistryKeys "HKLM:\SYSTEM\CurrentControlSet\Services\$svc"
             $n++
         }
     }
@@ -741,46 +869,63 @@ function Invoke-TurboMode {
     
     # 7. Memory & startup
     Draw-Section 'MEMORY & STARTUP'
-    Disable-MMAgent -MemoryCompression -EA SilentlyContinue
-    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize' -Name 'StartupDelayInMSec' -Value 0 -EA SilentlyContinue
+    Run-Task "Disable memory compression, zero startup delay" `
+        -Code {
+            Disable-MMAgent -MemoryCompression -EA SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize' -Name 'StartupDelayInMSec' -Value 0 -EA SilentlyContinue
+        } `
+        -RegistryKeys 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize'
     Write-Host '  Memory compression disabled, startup delay = 0' -F $dim; $n += 2
     
     # 8. Delivery optimization
     Draw-Section 'DELIVERY OPTIMIZATION'
-    New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Force | Out-Null
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Name 'DODownloadMode' -Value 0 -EA SilentlyContinue
+    Run-Task "Disable P2P update sharing" `
+        -Code {
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Force | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Name 'DODownloadMode' -Value 0 -EA SilentlyContinue
+        } `
+        -RegistryKeys 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization'
     Write-Host '  P2P update sharing disabled' -F $dim; $n++
     
     # 9. GPU priority
     Draw-Section 'GPU PRIORITY'
     $gpuPref = 'HKCU:\SOFTWARE\Microsoft\DirectX\UserGpuPreferences'
-    if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }
-    Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
-    $nvSvc = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
-    if (Test-Path $nvSvc) {
-        Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
-        Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
-    }
-    $nvidiaSmi = 'C:\Windows\System32\nvidia-smi.exe'
-    if (Test-Path $nvidiaSmi) { & $nvidiaSmi -pl 100 2>$null }
+    Run-Task "Force external GPU, NVIDIA max performance" `
+        -Code {
+            if (!(Test-Path $gpuPref)) { New-Item -Path $gpuPref -Force | Out-Null }
+            Set-ItemProperty -Path $gpuPref -Name 'DirectXUserGlobalSettings' -Value 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;GpuPreference=2;' -Type String -EA SilentlyContinue
+            $nvSvc = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
+            if (Test-Path $nvSvc) {
+                Set-ItemProperty -Path $nvSvc -Name 'PerfLevelSrc' -Value 8738 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerEnable' -Value 1 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevel' -Value 1 -Type DWord -EA SilentlyContinue
+                Set-ItemProperty -Path $nvSvc -Name 'PowerMizerLevelAC' -Value 1 -Type DWord -EA SilentlyContinue
+            }
+            $nvidiaSmi = 'C:\Windows\System32\nvidia-smi.exe'
+            if (Test-Path $nvidiaSmi) { & $nvidiaSmi -pl 100 2>$null }
+        } `
+        -RegistryKeys @($gpuPref, 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000')
     Write-Host '  External GPU forced, NVIDIA max power' -F $dim; $n += 2
     
     # 10. Temp cleanup
     Draw-Section 'TEMP CLEANUP'
-    $before = (Get-ChildItem $env:TEMP -Recurse -EA SilentlyContinue | Measure-Object Length -Sum).Sum
-    Remove-Item "$env:TEMP\*" -Recurse -Force -EA SilentlyContinue
-    Remove-Item 'C:\Windows\Temp\*' -Recurse -Force -EA SilentlyContinue
-    Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -EA SilentlyContinue
-    Clear-DnsClientCache -EA SilentlyContinue
-    Stop-Service wuauserv -Force -EA SilentlyContinue
-    Remove-Item 'C:\Windows\SoftwareDistribution\Download\*' -Recurse -Force -EA SilentlyContinue
-    Start-Service wuauserv -EA SilentlyContinue
-    Clear-RecycleBin -Force -EA SilentlyContinue
-    $after = (Get-ChildItem $env:TEMP -Recurse -EA SilentlyContinue | Measure-Object Length -Sum).Sum
-    $freed = [math]::Round(($before - $after) / 1MB, 0)
-    Write-Host "  Freed $freed MB" -F $ok; $n++
+    Run-Task "Deep temp cleanup" `
+        -Code {
+            $before = (Get-ChildItem $env:TEMP -Recurse -EA SilentlyContinue | Measure-Object Length -Sum).Sum
+            Remove-Item "$env:TEMP\*" -Recurse -Force -EA SilentlyContinue
+            Remove-Item 'C:\Windows\Temp\*' -Recurse -Force -EA SilentlyContinue
+            Remove-Item "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*" -Force -EA SilentlyContinue
+            Clear-DnsClientCache -EA SilentlyContinue
+            Stop-Service wuauserv -Force -EA SilentlyContinue
+            Remove-Item 'C:\Windows\SoftwareDistribution\Download\*' -Recurse -Force -EA SilentlyContinue
+            Start-Service wuauserv -EA SilentlyContinue
+            Clear-RecycleBin -Force -EA SilentlyContinue
+            $after = (Get-ChildItem $env:TEMP -Recurse -EA SilentlyContinue | Measure-Object Length -Sum).Sum
+            $freed = [math]::Round(($before - $after) / 1MB, 0)
+            Write-Host "  Freed $freed MB" -F $ok
+        } `
+        -FilePaths @($env:TEMP, 'C:\Windows\Temp', "$env:LOCALAPPDATA\Microsoft\Windows\Explorer", 'C:\Windows\SoftwareDistribution\Download')
+    $n++
     
     # 11. Explorer health
     Draw-Section 'EXPLORER HEALTH'
@@ -826,6 +971,38 @@ function Invoke-TurboMode {
 }
 
 # ============================================
+#  JEV ROUTER INTEGRATION (OPTIONAL)
+# ============================================
+function Invoke-JevTriage {
+    param([string]$TaskType = "optimization")
+
+    if (-not (Test-Path "$toolkitPath\jev-router\jev_router.py")) {
+        Write-Host "  Jev Router not available" -F $dim
+        return
+    }
+
+    Write-Host "  Running Jev triage for: $TaskType" -F $accent
+    $context = @{
+        task_type = $TaskType
+        sensitive = $true  # System modifications are sensitive
+        required_capabilities = @("system_admin", "registry", "services")
+    }
+    $contextJson = $context | ConvertTo-Json -Depth 5
+
+    $routerPath = "$toolkitPath\jev-router\jev_router.py"
+    $result = python $routerPath --choice "system_optimization" --context $contextJson 2>$null
+
+    if ($result) {
+        $decision = $result | ConvertFrom-Json
+        Write-Host "  Jev Decision: $($decision.selected_model) (confidence: $($decision.confidence * 100)%)" -F $accent
+        Write-Host "  Reasoning: $($decision.reasoning)" -F $dim
+        if ($decision.requires_human) {
+            Write-Host "  ⚠ HUMAN REVIEW REQUIRED" -F $warn
+        }
+    }
+}
+
+# ============================================
 #  MAIN MENU
 # ============================================
 Set-Theme
@@ -845,13 +1022,14 @@ while ($true) {
     
     $menu = @(
         @{ Name = 'System Info'; Desc = 'CPU, RAM, GPU, health status' }
-        @{ Name = 'Performance Tweaks'; Desc = 'Services, registry, network' }
+        @{ Name = 'Performance Tweaks'; Desc = 'Services, registry, network (with backup)' }
         @{ Name = 'Debloat'; Desc = 'Remove bloatware' }
         @{ Name = 'Gaming Mode'; Desc = 'Max FPS, kill hogs' }
-        @{ Name = 'Privacy'; Desc = 'Disable telemetry' }
+        @{ Name = 'Privacy'; Desc = 'Disable telemetry (with backup)' }
         @{ Name = 'Maintenance'; Desc = 'Clean temp, flush DNS' }
         @{ Name = 'Start AutoPilot'; Desc = 'Background monitor' }
-        @{ Name = 'Turbo Mode'; Desc = 'One-click apply ALL' }
+        @{ Name = 'Turbo Mode'; Desc = 'One-click apply ALL (with backup)' }
+        @{ Name = 'Jev Triage'; Desc = 'AI model routing for this task' }
     )
     
     Draw-Menu -Items $menu
@@ -876,7 +1054,7 @@ while ($true) {
             $scDir = Join-Path $env:TEMP 'sc'
             if (-not (Test-Path $scDir)) { New-Item -Path $scDir -ItemType Directory -Force | Out-Null }
             $enginePath = Join-Path $scDir 'engine.ps1'
-
+            
             $engineCode = @'
 $ErrorActionPreference = 'SilentlyContinue'
 $logPath = Join-Path $env:USERPROFILE 'Downloads\systemcare.log'
@@ -921,6 +1099,7 @@ while ($true) {
             Start-Sleep -Seconds 2
         }
         '8' { Invoke-TurboMode }
+        '9' { Invoke-JevTriage }
         's' { Stop-Computer -Force }
         'r' { Restart-Computer -Force }
         'x' { exit }
