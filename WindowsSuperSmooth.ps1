@@ -10,6 +10,37 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 
 $ErrorActionPreference = 'SilentlyContinue'
 
+# --- MANDATORY SYSTEM RESTORE POINT + BCD EXPORT ---
+function Ensure-RestorePointAndBCD {
+    Write-Host '  Creating System Restore Point...' -F $dim -NoNewline
+    try {
+        Checkpoint-Computer -Description 'Windows Super Smooth - Pre-Optimization' -RestorePointType 'MODIFY_SETTINGS' -EA Stop
+        Write-Host ' [OK]' -F $ok
+        Log 'Restore Point: Created'
+    } catch {
+        Write-Host ' [WARN - may already exist or disabled]' -F $warn
+        Log "Restore Point: $($_.Exception.Message)"
+    }
+    
+    Write-Host '  Exporting BCD...' -F $dim -NoNewline
+    $bcdPath = "$env:USERPROFILE\Downloads\BCD_Backup_$(Get-Date -Format 'yyyyMMdd-HHmmss').bcd"
+    try {
+        bcdedit /export "$bcdPath" 2>$null | Out-Null
+        if (Test-Path "$bcdPath") {
+            Write-Host ' [OK]' -F $ok
+            Log "BCD Export: $bcdPath"
+        } else {
+            Write-Host ' [SKIP]' -F $dim
+        }
+    } catch {
+        Write-Host ' [FAIL]' -F $err
+        Log "BCD Export Failed: $($_.Exception.Message)"
+    }
+}
+
+# Enforce checkpoint before any system modifications
+Ensure-RestorePointAndBCD
+
 # --- TOOLKIT INTEGRATION ---
 $toolkitPath = Join-Path $PSScriptRoot 'vendor\toolkit'
 if (Test-Path "$toolkitPath\backup-engine\powershell\BackupEngine.psm1") {
