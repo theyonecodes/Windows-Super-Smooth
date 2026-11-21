@@ -1,0 +1,377 @@
+{
+  "profiles": {
+    "Low-Latency Dev": {
+      "description": "Optimized for development workloads: low DPC latency, high timer resolution, disabled telemetry",
+      "safeForWSL2": false,
+      "safeForDocker": false,
+      "safeForHyperV": false,
+      "tweaks": {
+        "services": {
+          "disable": ["wuauserv", "bits", "DiagTrack", "dmwappushservice", "WerSvc", "Fax", "Spooler", "RemoteRegistry", "MapsBroker", "SharedAccess", "lfsvc", "RetailDemo", "WMPNetworkSvc", "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc", "BthServ", "AJRouter", "NetTcpPortSharing", "TabletInputService"],
+          "scheduledTasks": ["\\Microsoft\\Windows\\DiskCleanup\\SilentCleanup", "\\Microsoft\\Windows\\Defrag\\ScheduledDefrag", "\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip", "\\Microsoft\\Windows\\Maps\\MapsUpdateTask", "\\Microsoft\\Windows\\Shell\\FamilySafetyMonitor", "\\Microsoft\\Windows\\Windows Error Reporting\\QueueReporting", "\\Microsoft\\Office\\OfficeTelemetryAgentFallBack", "\\Microsoft\\Office\\OfficeTelemetryAgentLogOn"]
+        },
+        "registry": {
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters": {
+            "TcpAckFrequency": 1,
+            "TCPNoDelay": 1,
+            "DefaultTTL": 64,
+            "MaxUserPort": 65534,
+            "TcpTimedWaitDelay": 30,
+            "SackOpts": 1,
+            "Tcp1323Opts": 3
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem": {
+            "NtfsDisableLastAccessUpdate": 1,
+            "NtfsDisable8dot3NameCreation": 1,
+            "NtfsMemoryUsage": 2
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management": {
+            "LargeSystemCache": 0,
+            "DisablePagingExecutive": 1,
+            "ClearPageFileAtShutdown": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power": {
+            "HibernateEnabled": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl": {
+            "Win32PrioritySeparation": 38
+          },
+          "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile": {
+            "SystemResponsiveness": 0
+          },
+          "HKCU:\\Control Panel\\Desktop": {
+            "MenuShowDelay": "0",
+            "WaitToKillAppTimeout": "2000",
+            "HungAppTimeout": "1000",
+            "AutoEndTasks": "1"
+          },
+          "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager": {
+            "SubscribedContent-338389Enabled": 0,
+            "SubscribedContent-338388Enabled": 0,
+            "SoftLandingEnabled": 0
+          }
+        },
+        "mmcss": {
+          "Games": {
+            "GPU Priority": 8,
+            "Priority": 6,
+            "Scheduling Category": "High",
+            "SFIO Priority": "High"
+          }
+        },
+        "powerPlan": "HighPerformance",
+        "memory": {
+          "disableMemoryCompression": true,
+          "disablePagingExecutive": true,
+          "clearPageFileAtShutdown": 0
+        },
+        "network": {
+          "tcpOptimizations": true,
+          "disablePowerThrottling": true
+        },
+        "gpu": {
+          "forceExternalGPU": true,
+          "nvidiaMaxPerformance": true,
+          "hardwareAcceleratedGpuScheduling": true,
+          "disableIntelGpuPowerSaving": true
+        },
+        "visualEffects": "BestPerformance",
+        "gameBar": "Disabled",
+        "backgroundApps": "Disabled",
+        "notifications": "Disabled",
+        "telemetry": "Disabled",
+        "deliveryOptimization": "Disabled",
+        "memoryCompression": "Disabled",
+        "startupDelay": 0,
+        "deliveryOptimizationP2P": "Disabled"
+      }
+    },
+    "WSL2-Docker Safe Mode": {
+      "description": "Safe for WSL2, Docker Desktop, Hyper-V, VirtualBox, VMware. Avoids kernel tweaks that break virtualization.",
+      "safeForWSL2": true,
+      "safeForDocker": true,
+      "safeForHyperV": true,
+      "safeForVirtualBox": true,
+      "safeForVMware": true,
+      "tweaks": {
+        "services": {
+          "disable": ["wuauserv", "bits", "DiagTrack", "dmwappushservice", "WerSvc", "Fax", "RetailDemo", "WMPNetworkSvc", "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc", "BthServ", "AJRouter", "NetTcpPortSharing", "TabletInputService"],
+          "keepRunning": ["Spooler", "RemoteRegistry", "SharedAccess", "lfsvc", "MapsBroker", "SysMain", "WSearch"],
+          "scheduledTasks": ["\\Microsoft\\Windows\\DiskCleanup\\SilentCleanup", "\\Microsoft\\Windows\\Defrag\\ScheduledDefrag", "\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip", "\\Microsoft\\Windows\\Maps\\MapsUpdateTask", "\\Microsoft\\Windows\\Shell\\FamilySafetyMonitor", "\\Microsoft\\Windows\\Windows Error Reporting\\QueueReporting", "\\Microsoft\\Office\\OfficeTelemetryAgentFallBack", "\\Microsoft\\Office\\OfficeTelemetryAgentLogOn"]
+        },
+        "registry": {
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters": {
+            "TcpAckFrequency": 1,
+            "TCPNoDelay": 1,
+            "DefaultTTL": 64,
+            "MaxUserPort": 65534,
+            "TcpTimedWaitDelay": 30,
+            "SackOpts": 1,
+            "Tcp1323Opts": 3
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem": {
+            "NtfsDisableLastAccessUpdate": 1,
+            "NtfsDisable8dot3NameCreation": 1,
+            "NtfsMemoryUsage": 2
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management": {
+            "LargeSystemCache": 0,
+            "DisablePagingExecutive": 1,
+            "ClearPageFileAtShutdown": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power": {
+            "HibernateEnabled": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl": {
+            "Win32PrioritySeparation": 38
+          },
+          "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile": {
+            "SystemResponsiveness": 0
+          },
+          "HKCU:\\Control Panel\\Desktop": {
+            "MenuShowDelay": "0",
+            "WaitToKillAppTimeout": "2000",
+            "HungAppTimeout": "1000",
+            "AutoEndTasks": "1"
+          },
+          "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager": {
+            "SubscribedContent-338389Enabled": 0,
+            "SubscribedContent-338388Enabled": 0,
+            "SoftLandingEnabled": 0
+          }
+        },
+        "mmcss": {
+          "Games": {
+            "GPU Priority": 8,
+            "Priority": 6,
+            "Scheduling Category": "High",
+            "SFIO Priority": "High"
+          }
+        },
+        "powerPlan": "HighPerformance",
+        "memory": {
+          "disableMemoryCompression": true,
+          "disablePagingExecutive": true,
+          "clearPageFileAtShutdown": 0
+        },
+        "network": {
+          "tcpOptimizations": true,
+          "disablePowerThrottling": true
+        },
+        "gpu": {
+          "forceExternalGPU": true,
+          "nvidiaMaxPerformance": true,
+          "hardwareAcceleratedGpuScheduling": true,
+          "disableIntelGpuPowerSaving": true
+        },
+        "visualEffects": "BestPerformance",
+        "gameBar": "Disabled",
+        "backgroundApps": "Disabled",
+        "notifications": "Disabled",
+        "telemetry": "Disabled",
+        "deliveryOptimization": "Disabled",
+        "memoryCompression": "Disabled",
+        "startupDelay": 0,
+        "deliveryOptimizationP2P": "Disabled"
+      }
+    },
+    "Audio-DAW Real-Time": {
+      "description": "Ultra-low latency for audio production: highest timer resolution, MMCSS tuning, disabled power throttling",
+      "safeForWSL2": false,
+      "safeForDocker": false,
+      "safeForHyperV": false,
+      "tweaks": {
+        "services": {
+          "disable": ["wuauserv", "bits", "DiagTrack", "dmwappushservice", "WerSvc", "Fax", "Spooler", "RemoteRegistry", "MapsBroker", "SharedAccess", "lfsvc", "RetailDemo", "WMPNetworkSvc", "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc", "BthServ", "AJRouter", "NetTcpPortSharing", "TabletInputService", "SysMain", "WSearch"],
+          "scheduledTasks": ["\\Microsoft\\Windows\\DiskCleanup\\SilentCleanup", "\\Microsoft\\Windows\\Defrag\\ScheduledDefrag", "\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip", "\\Microsoft\\Windows\\Maps\\MapsUpdateTask", "\\Microsoft\\Windows\\Shell\\FamilySafetyMonitor", "\\Microsoft\\Windows\\Windows Error Reporting\\QueueReporting", "\\Microsoft\\Office\\OfficeTelemetryAgentFallBack", "\\Microsoft\\Office\\OfficeTelemetryAgentLogOn"]
+        },
+        "registry": {
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters": {
+            "TcpAckFrequency": 1,
+            "TCPNoDelay": 1,
+            "DefaultTTL": 64,
+            "MaxUserPort": 65534,
+            "TcpTimedWaitDelay": 30,
+            "SackOpts": 1,
+            "Tcp1323Opts": 3
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem": {
+            "NtfsDisableLastAccessUpdate": 1,
+            "NtfsDisable8dot3NameCreation": 1,
+            "NtfsMemoryUsage": 2
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management": {
+            "LargeSystemCache": 0,
+            "DisablePagingExecutive": 1,
+            "ClearPageFileAtShutdown": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power": {
+            "HibernateEnabled": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl": {
+            "Win32PrioritySeparation": 38
+          },
+          "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile": {
+            "SystemResponsiveness": 0
+          },
+          "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games": {
+            "GPU Priority": 8,
+            "Priority": 6,
+            "Scheduling Category": "High",
+            "SFIO Priority": "High"
+          },
+          "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Pro Audio": {
+            "GPU Priority": 8,
+            "Priority": 6,
+            "Scheduling Category": "High",
+            "SFIO Priority": "High"
+          },
+          "HKCU:\\Control Panel\\Desktop": {
+            "MenuShowDelay": "0",
+            "WaitToKillAppTimeout": "2000",
+            "HungAppTimeout": "1000",
+            "AutoEndTasks": "1"
+          },
+          "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager": {
+            "SubscribedContent-338389Enabled": 0,
+            "SubscribedContent-338388Enabled": 0,
+            "SoftLandingEnabled": 0
+          }
+        },
+        "mmcss": {
+          "Games": {
+            "GPU Priority": 8,
+            "Priority": 6,
+            "Scheduling Category": "High",
+            "SFIO Priority": "High"
+          },
+          "Pro Audio": {
+            "GPU Priority": 8,
+            "Priority": 6,
+            "Scheduling Category": "High",
+            "SFIO Priority": "High"
+          }
+        },
+        "powerPlan": "HighPerformance",
+        "memory": {
+          "disableMemoryCompression": true,
+          "disablePagingExecutive": true,
+          "clearPageFileAtShutdown": 0
+        },
+        "network": {
+          "tcpOptimizations": true,
+          "disablePowerThrottling": true
+        },
+        "gpu": {
+          "forceExternalGPU": true,
+          "nvidiaMaxPerformance": true,
+          "hardwareAcceleratedGpuScheduling": true,
+          "disableIntelGpuPowerSaving": true
+        },
+        "visualEffects": "BestPerformance",
+        "gameBar": "Disabled",
+        "backgroundApps": "Disabled",
+        "notifications": "Disabled",
+        "telemetry": "Disabled",
+        "deliveryOptimization": "Disabled",
+        "memoryCompression": "Disabled",
+        "startupDelay": 0,
+        "deliveryOptimizationP2P": "Disabled"
+      }
+    },
+    "Laptop Battery Safe": {
+      "description": "Balanced for laptops: reasonable performance without killing battery. Keeps power management active.",
+      "safeForWSL2": true,
+      "safeForDocker": true,
+      "safeForHyperV": true,
+      "tweaks": {
+        "services": {
+          "disable": ["wuauserv", "bits", "DiagTrack", "dmwappushservice", "WerSvc", "Fax", "RetailDemo", "WMPNetworkSvc", "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc", "BthServ", "AJRouter", "NetTcpPortSharing", "TabletInputService"],
+          "keepRunning": ["Spooler", "RemoteRegistry", "SharedAccess", "lfsvc", "MapsBroker", "SysMain", "WSearch", "Spooler"],
+          "scheduledTasks": ["\\Microsoft\\Windows\\DiskCleanup\\SilentCleanup", "\\Microsoft\\Windows\\Defrag\\ScheduledDefrag", "\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator", "\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip", "\\Microsoft\\Windows\\Maps\\MapsUpdateTask", "\\Microsoft\\Windows\\Shell\\FamilySafetyMonitor", "\\Microsoft\\Windows\\Windows Error Reporting\\QueueReporting", "\\Microsoft\\Office\\OfficeTelemetryAgentFallBack", "\\Microsoft\\Office\\OfficeTelemetryAgentLogOn"]
+        },
+        "registry": {
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters": {
+            "TcpAckFrequency": 1,
+            "TCPNoDelay": 1,
+            "DefaultTTL": 64,
+            "MaxUserPort": 65534,
+            "TcpTimedWaitDelay": 30,
+            "SackOpts": 1,
+            "Tcp1323Opts": 3
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem": {
+            "NtfsDisableLastAccessUpdate": 1,
+            "NtfsDisable8dot3NameCreation": 1,
+            "NtfsMemoryUsage": 2
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management": {
+            "LargeSystemCache": 0,
+            "DisablePagingExecutive": 1,
+            "ClearPageFileAtShutdown": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power": {
+            "HibernateEnabled": 0
+          },
+          "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl": {
+            "Win32PrioritySeparation": 26
+          },
+          "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile": {
+            "SystemResponsiveness": 10
+          },
+          "HKCU:\\Control Panel\\Desktop": {
+            "MenuShowDelay": "0",
+            "WaitToKillAppTimeout": "5000",
+            "HungAppTimeout": "2000",
+            "AutoEndTasks": "1"
+          },
+          "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager": {
+            "SubscribedContent-338389Enabled": 0,
+            "SubscribedContent-338388Enabled": 0,
+            "SoftLandingEnabled": 0
+          }
+        },
+        "mmcss": {
+          "Games": {
+            "GPU Priority": 8,
+            "Priority": 6,
+            "Scheduling Category": "High",
+            "SFIO Priority": "High"
+          }
+        },
+        "powerPlan": "Balanced",
+        "memory": {
+          "disableMemoryCompression": false,
+          "disablePagingExecutive": false,
+          "clearPageFileAtShutdown": 1
+        },
+        "network": {
+          "tcpOptimizations": true,
+          "disablePowerThrottling": false
+        },
+        "gpu": {
+          "forceExternalGPU": false,
+          "nvidiaMaxPerformance": false,
+          "hardwareAcceleratedGpuScheduling": true,
+          "disableIntelGpuPowerSaving": false
+        },
+        "visualEffects": "Custom",
+        "gameBar": "Disabled",
+        "backgroundApps": "Disabled",
+        "notifications": "Disabled",
+        "telemetry": "Disabled",
+        "deliveryOptimization": "Disabled",
+        "memoryCompression": "Enabled",
+        "startupDelay": 0,
+        "deliveryOptimizationP2P": "Disabled"
+      }
+    }
+  },
+  "profileSelection": {
+    "autoDetectWSL2": true,
+    "autoDetectDocker": true,
+    "autoDetectHyperV": true,
+    "warnOnIncompatible": true,
+    "defaultProfile": "WSL2-Docker Safe Mode"
+  }
+}
